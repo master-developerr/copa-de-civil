@@ -3,6 +3,7 @@ import { MatchStatus } from '@/types/tournament';
 const statusConfig: Record<MatchStatus, { label: string; className: string }> = {
   upcoming: { label: 'Upcoming', className: 'bg-secondary text-secondary-foreground' },
   live: { label: 'LIVE', className: 'bg-destructive/10 text-destructive border border-destructive/30' },
+  half_time: { label: 'HT', className: 'bg-accent/10 text-accent border border-accent/30' },
   completed: { label: 'FT', className: 'bg-muted text-muted-foreground' },
 };
 

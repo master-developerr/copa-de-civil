@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Team, Player, Match, MatchEvent, StandingsRow, Admin, TournamentState, MatchStatus } from '@/types/tournament';
+import { Team, Player, Match, MatchEvent, StandingsRow, PlayerStats, Admin, TournamentState, MatchStatus } from '@/types/tournament';
 
 interface TournamentContextType {
   teams: Team[];
   matches: Match[];
   standings: StandingsRow[];
+  playerStats: PlayerStats[];
   isAdmin: boolean;
   tournamentStarted: boolean;
   addTeam: (name: string, description?: string, logo?: string) => boolean;
@@ -16,6 +17,10 @@ interface TournamentContextType {
   updateMatchScore: (matchId: string, homeScore: number, awayScore: number) => void;
   addMatchEvent: (matchId: string, event: Omit<MatchEvent, 'id'>) => void;
   updateMatchMinute: (matchId: string, minute: number) => void;
+  setMatchDuration: (matchId: string, duration: number) => void;
+  startMatchTimer: (matchId: string) => void;
+  pauseMatchTimer: (matchId: string) => void;
+  startSecondHalf: (matchId: string) => void;
   startTournament: () => boolean;
   adminLogin: (name: string, password: string) => boolean;
   adminRegister: (name: string, password: string, code: string) => boolean;
@@ -54,6 +59,8 @@ function generateLeagueMatches(teams: Team[]): Match[] {
         matchDay: matchDay++,
         events: [],
         isFinal: false,
+        duration: 45,
+        currentHalf: 1,
       });
     }
   }
@@ -87,8 +94,6 @@ function calculateStandings(teams: Team[], matches: Match[]): StandingsRow[] {
   }
 
   rows.forEach(r => r.goalDifference = r.goalsFor - r.goalsAgainst);
-
-  // Sort: points > GD > GF
   rows.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
@@ -96,6 +101,49 @@ function calculateStandings(teams: Team[], matches: Match[]): StandingsRow[] {
   });
 
   return rows;
+}
+
+function calculatePlayerStats(matches: Match[]): PlayerStats[] {
+  const statsMap: Record<string, PlayerStats> = {};
+
+  for (const match of matches) {
+    for (const event of match.events) {
+      if (event.type === 'goal') {
+        // Goal scorer
+        const key = event.playerId || event.playerName;
+        if (!statsMap[key]) {
+          statsMap[key] = {
+            playerId: event.playerId || '',
+            playerName: event.playerName,
+            teamId: event.teamId,
+            goals: 0,
+            assists: 0,
+          };
+        }
+        statsMap[key].goals++;
+
+        // Assist
+        if (event.assistPlayerId) {
+          const aKey = event.assistPlayerId;
+          if (!statsMap[aKey]) {
+            statsMap[aKey] = {
+              playerId: event.assistPlayerId,
+              playerName: event.assistPlayerName || '',
+              teamId: event.teamId,
+              goals: 0,
+              assists: 0,
+            };
+          }
+          statsMap[aKey].assists++;
+        }
+      }
+    }
+  }
+
+  return Object.values(statsMap).sort((a, b) => {
+    if (b.goals !== a.goals) return b.goals - a.goals;
+    return b.assists - a.assists;
+  });
 }
 
 const defaultState: TournamentState = {
@@ -123,6 +171,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   }, [state]);
 
   const standings = calculateStandings(state.teams, state.matches);
+  const playerStats = calculatePlayerStats(state.matches);
   const leagueMatches = state.matches.filter(m => !m.isFinal);
   const leagueComplete = leagueMatches.length > 0 && leagueMatches.every(m => m.status === 'completed');
   const finalMatch = state.matches.find(m => m.isFinal);
@@ -186,7 +235,23 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const updateMatchStatus = (matchId: string, status: MatchStatus) => {
     setState(s => ({
       ...s,
-      matches: s.matches.map(m => m.id === matchId ? { ...m, status } : m),
+      matches: s.matches.map(m => {
+        if (m.id !== matchId) return m;
+        const updates: Partial<Match> = { status };
+        if (status === 'live' && !m.timerStartedAt) {
+          updates.currentHalf = 1;
+          updates.minute = 0;
+        }
+        if (status === 'half_time') {
+          updates.timerStartedAt = undefined;
+          updates.timerPausedAt = undefined;
+        }
+        if (status === 'completed') {
+          updates.timerStartedAt = undefined;
+          updates.timerPausedAt = undefined;
+        }
+        return { ...m, ...updates };
+      }),
     }));
   };
 
@@ -200,9 +265,20 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const addMatchEvent = (matchId: string, event: Omit<MatchEvent, 'id'>) => {
     setState(s => ({
       ...s,
-      matches: s.matches.map(m => m.id === matchId
-        ? { ...m, events: [...m.events, { ...event, id: generateId() }] }
-        : m),
+      matches: s.matches.map(m => {
+        if (m.id !== matchId) return m;
+        const newEvent = { ...event, id: generateId() };
+        const updatedMatch = { ...m, events: [...m.events, newEvent] };
+        // Auto-update score for goals
+        if (event.type === 'goal') {
+          if (event.teamId === m.homeTeamId) {
+            updatedMatch.homeScore = m.homeScore + 1;
+          } else if (event.teamId === m.awayTeamId) {
+            updatedMatch.awayScore = m.awayScore + 1;
+          }
+        }
+        return updatedMatch;
+      }),
     }));
   };
 
@@ -210,6 +286,51 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
     setState(s => ({
       ...s,
       matches: s.matches.map(m => m.id === matchId ? { ...m, minute } : m),
+    }));
+  };
+
+  const setMatchDuration = (matchId: string, duration: number) => {
+    setState(s => ({
+      ...s,
+      matches: s.matches.map(m => m.id === matchId ? { ...m, duration } : m),
+    }));
+  };
+
+  const startMatchTimer = (matchId: string) => {
+    setState(s => ({
+      ...s,
+      matches: s.matches.map(m => {
+        if (m.id !== matchId) return m;
+        return { ...m, timerStartedAt: Date.now(), status: 'live' as MatchStatus };
+      }),
+    }));
+  };
+
+  const pauseMatchTimer = (matchId: string) => {
+    setState(s => ({
+      ...s,
+      matches: s.matches.map(m => {
+        if (m.id !== matchId || !m.timerStartedAt) return m;
+        const elapsed = Math.floor((Date.now() - m.timerStartedAt) / 1000);
+        const total = (m.timerPausedAt || 0) + elapsed;
+        return { ...m, timerStartedAt: undefined, timerPausedAt: total };
+      }),
+    }));
+  };
+
+  const startSecondHalf = (matchId: string) => {
+    setState(s => ({
+      ...s,
+      matches: s.matches.map(m => {
+        if (m.id !== matchId) return m;
+        return {
+          ...m,
+          currentHalf: 2,
+          status: 'live' as MatchStatus,
+          timerStartedAt: Date.now(),
+          timerPausedAt: 0,
+        };
+      }),
     }));
   };
 
@@ -228,6 +349,8 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
       matchDay: 7,
       events: [],
       isFinal: true,
+      duration: 45,
+      currentHalf: 1,
     };
     setState(s => ({ ...s, matches: [...s.matches, fm] }));
     return true;
@@ -259,14 +382,15 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
 
   const getTeam = (id: string) => state.teams.find(t => t.id === id);
   const getMatch = (id: string) => state.matches.find(m => m.id === id);
-  const getLiveMatch = () => state.matches.find(m => m.status === 'live');
+  const getLiveMatch = () => state.matches.find(m => m.status === 'live' || m.status === 'half_time');
 
   return (
     <TournamentContext.Provider value={{
-      teams: state.teams, matches: state.matches, standings, isAdmin,
+      teams: state.teams, matches: state.matches, standings, playerStats, isAdmin,
       tournamentStarted: state.tournamentStarted,
       addTeam, removeTeam, addPlayer, removePlayer, setCaptain,
       updateMatchStatus, updateMatchScore, addMatchEvent, updateMatchMinute,
+      setMatchDuration, startMatchTimer, pauseMatchTimer, startSecondHalf,
       startTournament, adminLogin, adminRegister, adminLogout,
       getTeam, getMatch, getLiveMatch, getTopTwo,
       activateFinal, leagueComplete, finalMatch,

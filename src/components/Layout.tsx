@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, Users, Calendar, BarChart3, Shield, Zap } from 'lucide-react';
+import { Trophy, Users, Calendar, BarChart3, Shield, Zap, Target } from 'lucide-react';
 import { useTournament } from '@/context/TournamentContext';
 
 const navItems = [
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/teams', label: 'Teams', icon: Users },
   { to: '/fixtures', label: 'Fixtures', icon: Calendar },
   { to: '/standings', label: 'Standings', icon: BarChart3 },
+  { to: '/stats', label: 'Stats', icon: Target },
   { to: '/final', label: 'Final', icon: Trophy },
 ];
 

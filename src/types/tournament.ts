@@ -1,6 +1,6 @@
 export type Position = 'GK' | 'CB' | 'LB' | 'RB' | 'CM' | 'CDM' | 'CAM' | 'LM' | 'RM' | 'ST' | 'LW' | 'RW';
 
-export type MatchStatus = 'upcoming' | 'live' | 'completed';
+export type MatchStatus = 'upcoming' | 'live' | 'half_time' | 'completed';
 
 export interface Player {
   id: string;
@@ -12,14 +12,6 @@ export interface Player {
   photo?: string;
 }
 
-export interface Team {
-  id: string;
-  name: string;
-  logo?: string;
-  description?: string;
-  players: Player[];
-}
-
 export interface MatchEvent {
   id: string;
   type: 'goal' | 'yellow_card' | 'red_card';
@@ -27,6 +19,8 @@ export interface MatchEvent {
   playerId?: string;
   playerName: string;
   teamId: string;
+  assistPlayerId?: string;
+  assistPlayerName?: string;
 }
 
 export interface Match {
@@ -40,6 +34,10 @@ export interface Match {
   minute?: number;
   events: MatchEvent[];
   isFinal: boolean;
+  duration?: number; // half duration in minutes (e.g. 45 = 45 min halves)
+  timerStartedAt?: number; // timestamp when timer started
+  timerPausedAt?: number; // accumulated seconds when paused
+  currentHalf?: 1 | 2;
 }
 
 export interface StandingsRow {
@@ -54,6 +52,14 @@ export interface StandingsRow {
   points: number;
 }
 
+export interface PlayerStats {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  goals: number;
+  assists: number;
+}
+
 export interface Admin {
   id: string;
   name: string;
@@ -66,4 +72,12 @@ export interface TournamentState {
   admins: Admin[];
   adminCode: string;
   tournamentStarted: boolean;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  logo?: string;
+  description?: string;
+  players: Player[];
 }

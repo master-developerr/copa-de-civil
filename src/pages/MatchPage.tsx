@@ -45,6 +45,9 @@ export default function MatchPage() {
           {match.status === 'live' && match.minute !== undefined && (
             <span className="ml-2 text-sm font-bold text-destructive">{match.minute}'</span>
           )}
+          {match.status === 'half_time' && (
+            <span className="ml-2 text-sm font-bold text-accent">Half Time</span>
+          )}
         </div>
 
         <div className="flex items-center justify-center gap-8 md:gap-16">
@@ -98,6 +101,9 @@ export default function MatchPage() {
                     {event.type === 'red_card' && '🟥'}
                   </span>
                   <span className="text-foreground font-medium">{event.playerName}</span>
+                  {event.assistPlayerName && (
+                    <span className="text-muted-foreground text-xs">(assist: {event.assistPlayerName})</span>
+                  )}
                   <span className="text-muted-foreground text-xs">
                     ({getTeam(event.teamId)?.name})
                   </span>
