@@ -12,6 +12,7 @@ import FixturesPage from "./pages/FixturesPage";
 import StandingsPage from "./pages/StandingsPage";
 import MatchPage from "./pages/MatchPage";
 import FinalPage from "./pages/FinalPage";
+import PlayerStatsPage from "./pages/PlayerStatsPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/fixtures" element={<FixturesPage />} />
               <Route path="/standings" element={<StandingsPage />} />
               <Route path="/match/:id" element={<MatchPage />} />
+              <Route path="/stats" element={<PlayerStatsPage />} />
               <Route path="/final" element={<FinalPage />} />
               <Route path="/admin/login" element={<AdminLoginPage />} />
               <Route path="/admin" element={<AdminDashboard />} />

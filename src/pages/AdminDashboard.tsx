@@ -1,21 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '@/context/TournamentContext';
-import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star } from 'lucide-react';
-import { Position } from '@/types/tournament';
+import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star, Pause, Timer, CircleDot } from 'lucide-react';
+import { Position, Player } from '@/types/tournament';
 import StatusBadge from '@/components/StatusBadge';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 
 const POSITIONS: Position[] = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'ST', 'LW', 'RW'];
 
 type Tab = 'teams' | 'players' | 'matches' | 'tournament';
 
+// Timer display component
+function MatchTimer({ match }: { match: any }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!match.timerStartedAt) {
+      setElapsed(match.timerPausedAt || 0);
+      return;
+    }
+    const interval = setInterval(() => {
+      const secs = Math.floor((Date.now() - match.timerStartedAt) / 1000) + (match.timerPausedAt || 0);
+      setElapsed(secs);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [match.timerStartedAt, match.timerPausedAt]);
+
+  const halfOffset = match.currentHalf === 2 ? (match.duration || 45) : 0;
+  const mins = Math.floor(elapsed / 60) + halfOffset;
+  const secs = elapsed % 60;
+
+  return (
+    <span className="font-mono text-lg font-bold text-destructive">
+      {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+    </span>
+  );
+}
+
 export default function AdminDashboard() {
   const {
     teams, matches, isAdmin, tournamentStarted,
     addTeam, removeTeam, addPlayer, removePlayer, setCaptain,
-    updateMatchStatus, updateMatchScore, addMatchEvent, updateMatchMinute,
+    updateMatchStatus, addMatchEvent, updateMatchMinute,
     startTournament, adminLogout, getTeam, leagueComplete,
     activateFinal, finalMatch,
+    setMatchDuration, startMatchTimer, pauseMatchTimer, startSecondHalf,
   } = useTournament();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('teams');
@@ -27,6 +58,16 @@ export default function AdminDashboard() {
   const [playerName, setPlayerName] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
   const [position, setPosition] = useState<Position>('ST');
+
+  // Goal dialog state
+  const [goalDialog, setGoalDialog] = useState<{
+    matchId: string;
+    teamId: string;
+    teamName: string;
+    minute: number;
+  } | null>(null);
+  const [selectedScorer, setSelectedScorer] = useState('');
+  const [selectedAssist, setSelectedAssist] = useState('');
 
   if (!isAdmin) {
     navigate('/admin/login');
@@ -48,6 +89,47 @@ export default function AdminDashboard() {
     });
     setPlayerName('');
     setJerseyNumber('');
+  };
+
+  const openGoalDialog = (matchId: string, teamId: string, match: any) => {
+    const team = getTeam(teamId);
+    // Calculate current minute from timer
+    let minute = match.minute || 0;
+    if (match.timerStartedAt) {
+      const elapsed = Math.floor((Date.now() - match.timerStartedAt) / 1000) + (match.timerPausedAt || 0);
+      const halfOffset = match.currentHalf === 2 ? (match.duration || 45) : 0;
+      minute = Math.floor(elapsed / 60) + halfOffset;
+    }
+    setGoalDialog({
+      matchId,
+      teamId,
+      teamName: team?.name || 'Unknown',
+      minute,
+    });
+    setSelectedScorer('');
+    setSelectedAssist('');
+  };
+
+  const confirmGoal = () => {
+    if (!goalDialog || !selectedScorer) return;
+    const team = getTeam(goalDialog.teamId);
+    const scorer = team?.players.find(p => p.id === selectedScorer);
+    const assister = selectedAssist ? team?.players.find(p => p.id === selectedAssist) : undefined;
+    if (!scorer) return;
+
+    addMatchEvent(goalDialog.matchId, {
+      type: 'goal',
+      minute: goalDialog.minute,
+      playerId: scorer.id,
+      playerName: scorer.name,
+      teamId: goalDialog.teamId,
+      assistPlayerId: assister?.id,
+      assistPlayerName: assister?.name,
+    });
+
+    // Update displayed minute
+    updateMatchMinute(goalDialog.matchId, goalDialog.minute);
+    setGoalDialog(null);
   };
 
   const tabs: { id: Tab; label: string; icon: typeof Shield }[] = [
@@ -228,69 +310,153 @@ export default function AdminDashboard() {
               const away = getTeam(match.awayTeamId);
               if (!home || !away) return null;
 
+              const isLive = match.status === 'live';
+              const isHalfTime = match.status === 'half_time';
+              const isUpcoming = match.status === 'upcoming';
+              const isCompleted = match.status === 'completed';
+
               return (
-                <div key={match.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
+                <div key={match.id} className={`bg-card rounded-xl border p-4 space-y-4 ${
+                  isLive ? 'border-destructive/30 bg-destructive/5' : isHalfTime ? 'border-accent/30 bg-accent/5' : 'border-border'
+                }`}>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       {match.isFinal ? '🏆 Final' : `Match Day ${match.matchDay}`}
                     </span>
-                    <StatusBadge status={match.status} />
-                  </div>
-
-                  <div className="flex items-center justify-center gap-4">
-                    <span className="font-display font-bold uppercase text-sm text-foreground">{home.name}</span>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        value={match.homeScore}
-                        onChange={e => updateMatchScore(match.id, parseInt(e.target.value) || 0, match.awayScore)}
-                        className="w-14 text-center px-2 py-1 rounded bg-surface border border-border text-foreground font-display text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      />
-                      <span className="text-muted-foreground">-</span>
-                      <input
-                        type="number"
-                        min={0}
-                        value={match.awayScore}
-                        onChange={e => updateMatchScore(match.id, match.homeScore, parseInt(e.target.value) || 0)}
-                        className="w-14 text-center px-2 py-1 rounded bg-surface border border-border text-foreground font-display text-lg font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
-                      />
+                      {isLive && <MatchTimer match={match} />}
+                      <StatusBadge status={match.status} />
+                      {isLive && match.currentHalf && (
+                        <span className="text-xs font-bold text-muted-foreground">H{match.currentHalf}</span>
+                      )}
                     </div>
-                    <span className="font-display font-bold uppercase text-sm text-foreground">{away.name}</span>
                   </div>
 
-                  {match.status === 'live' && (
+                  {/* Duration setting for upcoming */}
+                  {isUpcoming && (
                     <div className="flex items-center justify-center gap-2">
-                      <label className="text-xs text-muted-foreground">Minute:</label>
+                      <Timer className="h-4 w-4 text-muted-foreground" />
+                      <label className="text-xs text-muted-foreground">Half duration (min):</label>
                       <input
                         type="number"
-                        min={0}
-                        max={120}
-                        value={match.minute || 0}
-                        onChange={e => updateMatchMinute(match.id, parseInt(e.target.value) || 0)}
+                        min={1}
+                        max={90}
+                        value={match.duration || 45}
+                        onChange={e => setMatchDuration(match.id, parseInt(e.target.value) || 45)}
                         className="w-16 text-center px-2 py-1 rounded bg-surface border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                       />
                     </div>
                   )}
 
+                  {/* Scoreboard */}
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <span className="font-display font-bold uppercase text-sm text-foreground">{home.name}</span>
+                      {isLive && (
+                        <button
+                          onClick={() => openGoalDialog(match.id, match.homeTeamId, match)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                        >
+                          ⚽ Goal
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-display text-4xl font-bold text-foreground">
+                        {isUpcoming ? '-' : match.homeScore}
+                      </span>
+                      <span className="text-muted-foreground text-lg">:</span>
+                      <span className="font-display text-4xl font-bold text-foreground">
+                        {isUpcoming ? '-' : match.awayScore}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1 flex-1">
+                      <span className="font-display font-bold uppercase text-sm text-foreground">{away.name}</span>
+                      {isLive && (
+                        <button
+                          onClick={() => openGoalDialog(match.id, match.awayTeamId, match)}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                        >
+                          ⚽ Goal
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Events list */}
+                  {match.events.length > 0 && (
+                    <div className="border-t border-border pt-3 space-y-1">
+                      {match.events
+                        .sort((a: any, b: any) => a.minute - b.minute)
+                        .map((event: any) => (
+                          <div key={event.id} className="flex items-center gap-2 text-xs">
+                            <span className="font-mono text-muted-foreground w-6 text-right">{event.minute}'</span>
+                            <span>{event.type === 'goal' ? '⚽' : event.type === 'yellow_card' ? '🟨' : '🟥'}</span>
+                            <span className="text-foreground font-medium">{event.playerName}</span>
+                            {event.assistPlayerName && (
+                              <span className="text-muted-foreground">(assist: {event.assistPlayerName})</span>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Controls */}
                   <div className="flex items-center justify-center gap-2 flex-wrap">
-                    {match.status === 'upcoming' && (
+                    {isUpcoming && (
                       <button
-                        onClick={() => updateMatchStatus(match.id, 'live')}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors"
+                        onClick={() => {
+                          startMatchTimer(match.id);
+                        }}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors"
                       >
-                        <Play className="h-3 w-3" /> Go Live
+                        <Play className="h-3 w-3" /> Kick Off
                       </button>
                     )}
-                    {match.status === 'live' && (
+                    {isLive && (
+                      <>
+                        {match.timerStartedAt ? (
+                          <button
+                            onClick={() => pauseMatchTimer(match.id)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs font-semibold hover:bg-accent/20 transition-colors"
+                          >
+                            <Pause className="h-3 w-3" /> Pause
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startMatchTimer(match.id)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                          >
+                            <Play className="h-3 w-3" /> Resume
+                          </button>
+                        )}
+                        {match.currentHalf === 1 && (
+                          <button
+                            onClick={() => updateMatchStatus(match.id, 'half_time')}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs font-semibold hover:bg-accent/20 transition-colors"
+                          >
+                            Half Time
+                          </button>
+                        )}
+                        {match.currentHalf === 2 && (
+                          <button
+                            onClick={() => updateMatchStatus(match.id, 'completed')}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+                          >
+                            Full Time
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {isHalfTime && (
                       <button
-                        onClick={() => updateMatchStatus(match.id, 'completed')}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-muted/80 transition-colors"
+                        onClick={() => startSecondHalf(match.id)}
+                        className="flex items-center gap-1 px-4 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
                       >
-                        Full Time
+                        <Play className="h-3 w-3" /> Start 2nd Half
                       </button>
                     )}
-                    {match.status === 'completed' && (
+                    {isCompleted && (
                       <button
                         onClick={() => updateMatchStatus(match.id, 'upcoming')}
                         className="px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-colors"
@@ -351,6 +517,83 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Goal Scorer Selection Dialog */}
+      <Dialog open={!!goalDialog} onOpenChange={(open) => !open && setGoalDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display uppercase">⚽ Goal Scored - {goalDialog?.teamName}</DialogTitle>
+            <DialogDescription>
+              Minute {goalDialog?.minute}' — Select the goal scorer and optional assist provider.
+            </DialogDescription>
+          </DialogHeader>
+          {goalDialog && (() => {
+            const team = getTeam(goalDialog.teamId);
+            const players = team?.players || [];
+            return (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Goal Scorer *</label>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    {players.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedScorer(p.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                          selectedScorer === p.id
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'bg-surface hover:bg-surface-hover text-foreground'
+                        }`}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground w-6">{p.jerseyNumber}</span>
+                        <span className="flex-1">{p.name}</span>
+                        <span className="text-xs text-muted-foreground">{p.position}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Assist By (optional)</label>
+                  <div className="space-y-1 max-h-48 overflow-y-auto">
+                    <button
+                      onClick={() => setSelectedAssist('')}
+                      className={`w-full px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                        selectedAssist === '' ? 'bg-primary/10 text-primary border border-primary/30' : 'bg-surface hover:bg-surface-hover text-muted-foreground'
+                      }`}
+                    >
+                      No assist
+                    </button>
+                    {players.filter(p => p.id !== selectedScorer).map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedAssist(p.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left ${
+                          selectedAssist === p.id
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'bg-surface hover:bg-surface-hover text-foreground'
+                        }`}
+                      >
+                        <span className="font-mono text-xs text-muted-foreground w-6">{p.jerseyNumber}</span>
+                        <span className="flex-1">{p.name}</span>
+                        <span className="text-xs text-muted-foreground">{p.position}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={confirmGoal}
+                  disabled={!selectedScorer}
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                  Confirm Goal
+                </button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
