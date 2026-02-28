@@ -9,7 +9,7 @@ export default function StandingsTable({ mini = false }: Props) {
 
   if (standings.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-8 text-muted-foreground text-sm">
         No standings available yet.
       </div>
     );
@@ -19,21 +19,21 @@ export default function StandingsTable({ mini = false }: Props) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border text-muted-foreground">
-            <th className="text-left py-3 px-2 font-medium">#</th>
-            <th className="text-left py-3 px-2 font-medium">Team</th>
-            <th className="text-center py-3 px-2 font-medium">P</th>
+          <tr className="border-b border-border">
+            <th className="text-left py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">#</th>
+            <th className="text-left py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Team</th>
+            <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">P</th>
             {!mini && (
               <>
-                <th className="text-center py-3 px-2 font-medium">W</th>
-                <th className="text-center py-3 px-2 font-medium">D</th>
-                <th className="text-center py-3 px-2 font-medium">L</th>
-                <th className="text-center py-3 px-2 font-medium hidden sm:table-cell">GF</th>
-                <th className="text-center py-3 px-2 font-medium hidden sm:table-cell">GA</th>
+                <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">W</th>
+                <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">D</th>
+                <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">L</th>
+                <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">GF</th>
+                <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">GA</th>
               </>
             )}
-            <th className="text-center py-3 px-2 font-medium">GD</th>
-            <th className="text-center py-3 px-2 font-medium">Pts</th>
+            <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">GD</th>
+            <th className="text-center py-2.5 px-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Pts</th>
           </tr>
         </thead>
         <tbody>
@@ -43,35 +43,35 @@ export default function StandingsTable({ mini = false }: Props) {
             return (
               <tr
                 key={row.teamId}
-                className={`border-b border-border/50 transition-colors hover:bg-secondary/50 ${
-                  isTopTwo ? 'bg-primary/5' : ''
+                className={`border-b border-border/30 transition-colors hover:bg-secondary/30 ${
+                  isTopTwo ? 'bg-primary/[0.03]' : ''
                 }`}
               >
-                <td className="py-3 px-2">
-                  <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-bold ${
-                    isTopTwo ? 'bg-primary/20 text-primary' : 'text-muted-foreground'
+                <td className="py-2.5 px-2">
+                  <span className={`inline-flex items-center justify-center h-5 w-5 rounded text-[11px] font-bold ${
+                    isTopTwo ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
                   }`}>
                     {i + 1}
                   </span>
                 </td>
-                <td className="py-3 px-2">
-                  <span className="font-display font-semibold uppercase text-sm">
+                <td className="py-2.5 px-2">
+                  <span className="font-semibold text-sm text-foreground">
                     {team?.name || 'Unknown'}
                   </span>
                 </td>
-                <td className="text-center py-3 px-2">{row.played}</td>
+                <td className="text-center py-2.5 px-2 text-muted-foreground">{row.played}</td>
                 {!mini && (
                   <>
-                    <td className="text-center py-3 px-2">{row.wins}</td>
-                    <td className="text-center py-3 px-2">{row.draws}</td>
-                    <td className="text-center py-3 px-2">{row.losses}</td>
-                    <td className="text-center py-3 px-2 hidden sm:table-cell">{row.goalsFor}</td>
-                    <td className="text-center py-3 px-2 hidden sm:table-cell">{row.goalsAgainst}</td>
+                    <td className="text-center py-2.5 px-2 text-muted-foreground">{row.wins}</td>
+                    <td className="text-center py-2.5 px-2 text-muted-foreground">{row.draws}</td>
+                    <td className="text-center py-2.5 px-2 text-muted-foreground">{row.losses}</td>
+                    <td className="text-center py-2.5 px-2 text-muted-foreground hidden sm:table-cell">{row.goalsFor}</td>
+                    <td className="text-center py-2.5 px-2 text-muted-foreground hidden sm:table-cell">{row.goalsAgainst}</td>
                   </>
                 )}
-                <td className="text-center py-3 px-2 font-medium">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
-                <td className="text-center py-3 px-2">
-                  <span className="font-display font-bold text-foreground">{row.points}</span>
+                <td className="text-center py-2.5 px-2 font-medium text-foreground">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+                <td className="text-center py-2.5 px-2">
+                  <span className="font-bold text-primary">{row.points}</span>
                 </td>
               </tr>
             );

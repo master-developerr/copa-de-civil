@@ -9,12 +9,12 @@ export default {
       center: true,
       padding: "1.5rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1280px",
       },
     },
     extend: {
       fontFamily: {
-        display: ["Oswald", "sans-serif"],
+        display: ["Bebas Neue", "sans-serif"],
         body: ["Inter", "sans-serif"],
       },
       colors: {
@@ -63,7 +63,6 @@ export default {
         },
         live: "hsl(var(--live))",
         champion: "hsl(var(--champion))",
-        pitch: "hsl(var(--pitch))",
         surface: "hsl(var(--surface))",
       },
       borderRadius: {

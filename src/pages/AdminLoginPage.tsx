@@ -33,63 +33,63 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-primary/10 mb-4">
-            <Shield className="h-8 w-8 text-primary" />
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-md bg-primary/10 mb-3">
+            <Shield className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="font-display text-2xl font-bold uppercase text-foreground">
-            {mode === 'login' ? 'Admin Login' : 'Admin Register'}
+          <h1 className="font-display text-2xl tracking-wide text-foreground">
+            {mode === 'login' ? 'ADMIN LOGIN' : 'ADMIN REGISTER'}
           </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1.5">Name</label>
+            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Name</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 rounded-md bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
               placeholder="Admin name"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-1.5">Password</label>
+            <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Password</label>
             <input
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 rounded-md bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
               placeholder="••••••••"
             />
           </div>
           {mode === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1.5">Admin Code</label>
+              <label className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Admin Code</label>
               <input
                 type="text"
                 value={code}
                 onChange={e => setCode(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 rounded-md bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
                 placeholder="Enter access code"
               />
             </div>
           )}
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-xs text-destructive">{error}</p>}
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
           >
-            {mode === 'login' ? <LogIn className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+            {mode === 'login' ? <LogIn className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
             {mode === 'login' ? 'Login' : 'Register'}
           </button>
         </form>
 
         <button
           onClick={() => { setMode(m => m === 'login' ? 'register' : 'login'); setError(''); }}
-          className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-4"
+          className="w-full text-center text-xs text-muted-foreground hover:text-foreground mt-3"
         >
           {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Login'}
         </button>
