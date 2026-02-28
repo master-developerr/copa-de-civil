@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,51 +6,50 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%;
-    --foreground: 210 20% 92%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 92%;
 
-    --card: 220 18% 10%;
-    --card-foreground: 210 20% 92%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 92%;
 
-    --popover: 220 18% 10%;
-    --popover-foreground: 210 20% 92%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 92%;
 
-    --primary: 152 60% 42%;
-    --primary-foreground: 220 20% 7%;
+    --primary: 40 80% 55%;
+    --primary-foreground: 0 0% 5%;
 
-    --secondary: 220 16% 16%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 75%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 215 12% 50%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 43 90% 55%;
-    --accent-foreground: 220 20% 7%;
+    --accent: 40 80% 55%;
+    --accent-foreground: 0 0% 5%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 14% 18%;
-    --input: 220 14% 18%;
-    --ring: 152 60% 42%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 40 80% 55%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --sidebar-background: 220 20% 5%;
-    --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 152 60% 42%;
-    --sidebar-primary-foreground: 220 20% 7%;
-    --sidebar-accent: 220 16% 14%;
-    --sidebar-accent-foreground: 210 20% 85%;
-    --sidebar-border: 220 14% 15%;
-    --sidebar-ring: 152 60% 42%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 75%;
+    --sidebar-primary: 40 80% 55%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 75%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 40 80% 55%;
 
     /* Custom tokens */
     --live: 0 72% 51%;
-    --champion: 43 90% 55%;
-    --pitch: 152 60% 42%;
-    --surface: 220 16% 12%;
-    --surface-hover: 220 16% 16%;
+    --champion: 40 80% 55%;
+    --surface: 0 0% 9%;
+    --surface-hover: 0 0% 12%;
   }
 }
 
@@ -71,12 +70,7 @@
 @layer utilities {
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(43 90% 55%), hsl(38 85% 65%));
-  }
-
-  .text-gradient-green {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(152 60% 42%), hsl(160 55% 50%));
+    background-image: linear-gradient(135deg, hsl(40 80% 55%), hsl(35 75% 65%));
   }
 
   .bg-surface {
@@ -87,27 +81,19 @@
     background-color: hsl(var(--surface-hover));
   }
 
-  .glow-green {
-    box-shadow: 0 0 20px hsl(152 60% 42% / 0.15);
-  }
-
-  .glow-gold {
-    box-shadow: 0 0 20px hsl(43 90% 55% / 0.15);
-  }
-
   .live-pulse {
     animation: livePulse 2s ease-in-out infinite;
   }
 
   @keyframes livePulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    50% { opacity: 0.4; }
   }
 
   @keyframes fadeInUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -116,7 +102,7 @@
   }
 
   .animate-fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
+    animation: fadeInUp 0.4s ease-out forwards;
   }
 
   @keyframes countUp {

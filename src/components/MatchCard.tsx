@@ -14,52 +14,52 @@ export default function MatchCard({ match }: { match: Match }) {
   return (
     <Link
       to={`/match/${match.id}`}
-      className="block bg-card rounded-lg border border-border hover:border-primary/30 transition-all hover:glow-green p-4"
+      className="block bg-card rounded-lg border border-border hover:border-primary/20 transition-all p-4"
     >
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-muted-foreground font-medium">
-          {match.isFinal ? '🏆 FINAL' : `Match Day ${match.matchDay}`}
+        <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+          {match.isFinal ? '🏆 Final' : `Matchday ${match.matchDay}`}
         </span>
         <StatusBadge status={match.status} />
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="h-10 w-10 rounded-full bg-surface flex items-center justify-center">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className="h-9 w-9 rounded-md bg-surface flex items-center justify-center shrink-0">
             {home.logo ? (
-              <img src={home.logo} alt={home.name} className="h-8 w-8 rounded-full object-cover" />
+              <img src={home.logo} alt={home.name} className="h-7 w-7 rounded-sm object-cover" />
             ) : (
-              <Shield className="h-5 w-5 text-muted-foreground" />
+              <Shield className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
-          <span className="font-display text-sm font-semibold uppercase">{home.name}</span>
+          <span className="font-display text-sm tracking-wide truncate">{home.name}</span>
         </div>
 
-        <div className="flex items-center gap-3 px-4">
-          <span className={`font-display text-2xl font-bold ${match.status !== 'upcoming' ? 'text-foreground' : 'text-muted-foreground'}`}>
+        <div className="flex items-center gap-2.5 px-3">
+          <span className={`font-display text-2xl ${match.status !== 'upcoming' ? 'text-foreground' : 'text-muted-foreground'}`}>
             {match.status === 'upcoming' ? '-' : match.homeScore}
           </span>
-          <span className="text-muted-foreground text-xs">vs</span>
-          <span className={`font-display text-2xl font-bold ${match.status !== 'upcoming' ? 'text-foreground' : 'text-muted-foreground'}`}>
+          <span className="text-muted-foreground text-[10px] uppercase">vs</span>
+          <span className={`font-display text-2xl ${match.status !== 'upcoming' ? 'text-foreground' : 'text-muted-foreground'}`}>
             {match.status === 'upcoming' ? '-' : match.awayScore}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 flex-1 justify-end">
-          <span className="font-display text-sm font-semibold uppercase text-right">{away.name}</span>
-          <div className="h-10 w-10 rounded-full bg-surface flex items-center justify-center">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0 justify-end">
+          <span className="font-display text-sm tracking-wide truncate text-right">{away.name}</span>
+          <div className="h-9 w-9 rounded-md bg-surface flex items-center justify-center shrink-0">
             {away.logo ? (
-              <img src={away.logo} alt={away.name} className="h-8 w-8 rounded-full object-cover" />
+              <img src={away.logo} alt={away.name} className="h-7 w-7 rounded-sm object-cover" />
             ) : (
-              <Shield className="h-5 w-5 text-muted-foreground" />
+              <Shield className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
         </div>
       </div>
 
       {match.status === 'live' && match.minute !== undefined && (
-        <div className="mt-3 text-center">
-          <span className="text-xs font-bold text-destructive">{match.minute}'</span>
+        <div className="mt-2 text-center">
+          <span className="text-[11px] font-bold text-destructive">{match.minute}'</span>
         </div>
       )}
     </Link>

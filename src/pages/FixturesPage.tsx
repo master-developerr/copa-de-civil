@@ -9,16 +9,16 @@ export default function FixturesPage() {
 
   return (
     <div className="container py-8">
-      <h1 className="font-display text-3xl font-bold uppercase mb-8 text-foreground">Fixtures</h1>
+      <h1 className="font-display text-3xl tracking-wide mb-6 text-foreground">FIXTURES</h1>
 
       {leagueMatches.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
-          <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Tournament hasn't started yet. No fixtures available.</p>
+          <Calendar className="h-10 w-10 mx-auto mb-3 opacity-40" />
+          <p className="text-sm">Tournament hasn't started yet.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          <h2 className="font-display text-lg font-bold uppercase text-muted-foreground">League Stage</h2>
+        <div className="space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">League Stage</h2>
           {leagueMatches.map(match => (
             <MatchCard key={match.id} match={match} />
           ))}
@@ -26,9 +26,9 @@ export default function FixturesPage() {
       )}
 
       {finalMatch && (
-        <div className="mt-8 space-y-4">
-          <h2 className="font-display text-lg font-bold uppercase text-gradient-gold">🏆 Final</h2>
-          <div className="border border-accent/20 rounded-xl p-1 bg-accent/5">
+        <div className="mt-6 space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-primary mb-3">🏆 Final</h2>
+          <div className="border border-primary/15 rounded-lg p-1 bg-primary/[0.02]">
             <MatchCard match={finalMatch} />
           </div>
         </div>
