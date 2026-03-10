@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
+# Copa de Civil 🏆
 
-## Project info
+Welcome to **Copa de Civil**! A real-time, beautifully designed football (soccer) tournament management application built with React, Vite, Tailwind CSS, and Convex.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🌟 Features
 
-## How can I edit this code?
+- **Real-time Sync**: Powered by Convex, all tournament data (matches, scores, timers) syncs perfectly across multiple devices and browser tabs in real-time.
+- **Admin Dashboard**: A secure admin portal to create teams, register players, and manage match events (goals, cards, extra time, penalties).
+- **Live Match Tracking**: Track ongoing matches with a live timer, live pulse indicator, and instant score updates.
+- **Tournament Standings**: Auto-calculating league table sorting teams by points, goal difference, and goals scored.
+- **Predictor Challenge**: Users can lock in their predictions for the final match score before Matchday 3 ends!
 
-There are several ways of editing your application.
+## 🚀 Tech Stack
 
-**Use Lovable**
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui, Lucide React (Icons)
+- **Backend & Database**: Convex (Real-time DB & Cloud Functions)
+- **Routing**: React Router DOM
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+To run this project locally, follow these steps:
 
-**Use your preferred IDE**
+### Prerequisites
+Make sure you have Node.js installed on your machine.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/master-developerr/copa-de-civil.git
+   ```
+2. Navigate into the project directory:
+   ```bash
+   cd copa-de-civil
+   ```
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Follow these steps:
+### Running Locally
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Start the Convex development server (in a new terminal):
+   ```bash
+   npx convex dev
+   ```
+2. Start the Vite frontend development server:
+   ```bash
+   npm run dev
+   ```
+3. Open `http://localhost:8080` (or the port provided by Vite) in your browser.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🛡️ Admin Access
+To access the admin dashboard, navigate to `/admin/login`. 
+- **Secret Code**: *(Contact administrator for code)*
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 📝 License
+This project is open-source and available under the MIT License.
