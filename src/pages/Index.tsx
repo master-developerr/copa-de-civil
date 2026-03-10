@@ -1,14 +1,23 @@
 import { Link } from 'react-router-dom';
-import { Trophy, ArrowRight, Users, Calendar, BarChart3, Lightbulb } from 'lucide-react';
+import { Trophy, ArrowRight, Users, Calendar, BarChart3, Lightbulb, Crown } from 'lucide-react';
 import { useTournament } from '@/context/TournamentContext';
 import StandingsTable from '@/components/StandingsTable';
 import MatchCard from '@/components/MatchCard';
 import heroBanner from '@/assets/hero-banner.png';
 
 export default function LandingPage() {
-  const { teams, matches, getLiveMatch, predictions } = useTournament();
+  const { teams, matches, getLiveMatch, predictions, finalMatch, getTeam } = useTournament();
   const liveMatch = getLiveMatch();
   const upcomingMatch = matches.find(m => m.status === 'upcoming');
+  const getWinner = () => {
+    if (!finalMatch || finalMatch.status !== 'completed') return null;
+    if (finalMatch.homeScore > finalMatch.awayScore) return getTeam(finalMatch.homeTeamId);
+    if (finalMatch.awayScore > finalMatch.homeScore) return getTeam(finalMatch.awayTeamId);
+    if ((finalMatch.homePenaltyScore || 0) > (finalMatch.awayPenaltyScore || 0)) return getTeam(finalMatch.homeTeamId);
+    if ((finalMatch.awayPenaltyScore || 0) > (finalMatch.homePenaltyScore || 0)) return getTeam(finalMatch.awayTeamId);
+    return null;
+  };
+  const winner = getWinner();
 
   return (
     <div>
@@ -60,6 +69,29 @@ export default function LandingPage() {
       )}
 
       <div className="container py-6 space-y-8">
+        {/* Winner Banner */}
+        {winner && (
+          <section className="mb-4">
+            <div className="w-full rounded-xl bg-gradient-to-r from-yellow-500/20 via-yellow-400/10 to-transparent border border-yellow-500/30 p-6 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6 relative overflow-hidden">
+              <div className="absolute right-0 top-0 bottom-0 w-64 bg-yellow-500/10 -skew-x-12 translate-x-12 hidden md:block" />
+              <div className="h-16 w-16 min-w-16 rounded-full bg-yellow-500/20 flex flex-col items-center justify-center border border-yellow-500/40 relative z-10 shadow-[0_0_15px_rgba(234,179,8,0.3)] shrink-0">
+                {winner.logo ? (
+                  <img src={winner.logo} className="w-10 h-10 object-contain" />
+                ) : (
+                  <Trophy className="h-8 w-8 text-yellow-500 drop-shadow-md" />
+                )}
+              </div>
+              <div className="relative z-10 text-center md:text-left mt-2 md:mt-0">
+                <div className="flex items-center justify-center md:justify-start gap-2 mb-1.5">
+                  <Crown className="h-5 w-5 text-yellow-500 hidden sm:block" />
+                  <h2 className="font-display text-2xl text-foreground tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-200">CHAMPIONS</h2>
+                </div>
+                <p className="text-sm md:text-base text-foreground/90 font-medium">Congratulations to <span className="font-bold text-yellow-500">{winner.name}</span> on winning the Copa de Civil!</p>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Quick Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[

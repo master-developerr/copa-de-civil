@@ -42,3 +42,32 @@ export const initialize = mutation({
         }
     }
 })
+
+export const deleteTournament = mutation({
+    args: {},
+    handler: async (ctx) => {
+        // Delete all matches
+        const matches = await ctx.db.query("matches").collect();
+        for (const match of matches) {
+            await ctx.db.delete(match._id);
+        }
+
+        // Delete all predictions
+        const predictions = await ctx.db.query("predictions").collect();
+        for (const pred of predictions) {
+            await ctx.db.delete(pred._id);
+        }
+
+        // Delete all teams
+        const teams = await ctx.db.query("teams").collect();
+        for (const team of teams) {
+            await ctx.db.delete(team._id);
+        }
+
+        // Reset Settings
+        const settings = await ctx.db.query("settings").first();
+        if (settings) {
+            await ctx.db.patch(settings._id, { tournamentStarted: false });
+        }
+    }
+});

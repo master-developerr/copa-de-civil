@@ -49,6 +49,7 @@ interface TournamentContextType {
   activateFinal: () => boolean;
   leagueComplete: boolean;
   finalMatch: Match | undefined;
+  deleteTournament: () => void;
 }
 
 const TournamentContext = createContext<TournamentContextType | null>(null);
@@ -182,6 +183,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   // Convex Mutations
   const initSettings = useMutation(api.settings.initialize);
   const toggleTournament = useMutation(api.settings.toggleTournamentStarted);
+  const deleteTournamentMutation = useMutation(api.settings.deleteTournament);
 
   const addTeamMutation = useMutation(api.teams.add);
   const removeTeamMutation = useMutation(api.teams.remove);
@@ -328,6 +330,13 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
     addPredictionMutation(prediction);
   };
 
+  const deleteTournament = useCallback(() => {
+    if (window.confirm("Are you SURE you want to completely delete the tournament? All teams, matches, and predictions will be wiped forever!")) {
+      deleteTournamentMutation();
+      window.location.reload();
+    }
+  }, [deleteTournamentMutation]);
+
   return (
     <TournamentContext.Provider value={{
       teams, matches, standings, playerStats,
@@ -342,7 +351,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
       startExtraTime, startPenalties, updatePenaltyScore,
       startTournament, adminLogin, adminLogout,
       getTeam, getMatch, getLiveMatch, getTopTwo,
-      activateFinal, leagueComplete, finalMatch,
+      activateFinal, leagueComplete, finalMatch, deleteTournament,
     }}>
       {children}
     </TournamentContext.Provider>

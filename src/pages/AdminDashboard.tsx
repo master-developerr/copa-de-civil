@@ -21,7 +21,7 @@ export default function AdminDashboard() {
     startTournament, adminLogout, getTeam, leagueComplete,
     activateFinal, finalMatch,
     setMatchDuration, setExtraTimeDuration, startMatchTimer, pauseMatchTimer, startSecondHalf, startExtraTimeSecondHalf,
-    startExtraTime, startPenalties, updatePenaltyScore,
+    startExtraTime, startPenalties, updatePenaltyScore, deleteTournament
   } = useTournament();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('teams');
@@ -545,6 +545,17 @@ export default function AdminDashboard() {
                 </button>
               )}
             </div>
+
+            <div className="pt-8 mt-4 border-t border-destructive/20">
+              <h4 className="text-sm font-semibold text-destructive mb-2">Danger Zone</h4>
+              <button
+                onClick={deleteTournament}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors border border-destructive/20"
+              >
+                <Trash2 className="h-4 w-4" /> Delete Entire Tournament
+              </button>
+              <p className="text-[10px] text-muted-foreground mt-2 text-center">This will permanently wipe all teams, matches, predictions, and settings.</p>
+            </div>
           </div>
         </div>
       )}
@@ -672,6 +683,6 @@ export default function AdminDashboard() {
           })()}
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }
