@@ -6,6 +6,8 @@ export default function PlayerStatsPage() {
 
   const topScorers = [...playerStats].sort((a, b) => b.goals - a.goals).filter(p => p.goals > 0);
   const topAssists = [...playerStats].sort((a, b) => b.assists - a.assists).filter(p => p.assists > 0);
+  const topYellows = [...playerStats].sort((a, b) => b.yellowCards - a.yellowCards).filter(p => p.yellowCards > 0);
+  const topReds = [...playerStats].sort((a, b) => b.redCards - a.redCards).filter(p => p.redCards > 0);
 
   return (
     <div className="container py-8">
@@ -69,6 +71,70 @@ export default function PlayerStatsPage() {
                       </div>
                     </div>
                     <span className="font-display text-xl text-foreground">{p.assists}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Most Yellow Cards */}
+        <div className="bg-card rounded-lg border border-border p-4 md:p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-4 w-3 bg-yellow-500 rounded-sm" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Most Yellow Cards</h2>
+          </div>
+          {topYellows.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No yellow cards given yet.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {topYellows.map((p, i) => {
+                const team = getTeam(p.teamId);
+                return (
+                  <div key={p.playerId + i} className={`flex items-center gap-2.5 p-2.5 rounded-md bg-surface`}>
+                    <span className="font-display text-base w-6 text-center text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm text-foreground block truncate">{p.playerName}</span>
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Shield className="h-2.5 w-2.5" />
+                        {team?.name || 'Unknown'}
+                      </div>
+                    </div>
+                    <span className="font-display text-xl text-yellow-500">{p.yellowCards}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Most Red Cards */}
+        <div className="bg-card rounded-lg border border-border p-4 md:p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-4 w-3 bg-red-500 rounded-sm" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Most Red Cards</h2>
+          </div>
+          {topReds.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No red cards given yet.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {topReds.map((p, i) => {
+                const team = getTeam(p.teamId);
+                return (
+                  <div key={p.playerId + i} className={`flex items-center gap-2.5 p-2.5 rounded-md bg-surface`}>
+                    <span className="font-display text-base w-6 text-center text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-sm text-foreground block truncate">{p.playerName}</span>
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <Shield className="h-2.5 w-2.5" />
+                        {team?.name || 'Unknown'}
+                      </div>
+                    </div>
+                    <span className="font-display text-xl text-red-500">{p.redCards}</span>
                   </div>
                 );
               })}

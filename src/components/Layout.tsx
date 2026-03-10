@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Trophy, Users, Calendar, BarChart3, Shield, Target } from 'lucide-react';
+import { Trophy, Users, Calendar, BarChart3, Shield, Target, Lightbulb } from 'lucide-react';
 import { useTournament } from '@/context/TournamentContext';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/fixtures', label: 'Fixtures', icon: Calendar },
   { to: '/standings', label: 'Standings', icon: BarChart3 },
   { to: '/stats', label: 'Stats', icon: Target },
+  { to: '/predictor', label: 'Predictor', icon: Lightbulb },
   { to: '/final', label: 'Finals', icon: Trophy },
 ];
 
@@ -26,7 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Trophy className="h-4 w-4 text-primary" />
             </div>
             <span className="font-display text-xl tracking-wide text-foreground">
-              COLLEGE CUP
+              COPA DE CIVIL
             </span>
           </Link>
 
@@ -37,11 +38,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    active
-                      ? 'text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${active
+                    ? 'text-primary'
+                    : 'text-muted-foreground hover:text-foreground'
+                    }`}
                 >
                   {item.label}
                 </Link>
@@ -76,9 +76,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`flex flex-col items-center gap-0.5 px-2 py-1 transition-colors ${
-                  active ? 'text-primary' : 'text-muted-foreground'
-                }`}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 transition-colors ${active ? 'text-primary' : 'text-muted-foreground'
+                  }`}
               >
                 <item.icon className="h-4 w-4" />
                 <span className="text-[10px] font-medium">{item.label}</span>

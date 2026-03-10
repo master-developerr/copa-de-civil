@@ -3,6 +3,7 @@ import { useTournament } from '@/context/TournamentContext';
 import StatusBadge from './StatusBadge';
 import { Match } from '@/types/tournament';
 import { Shield } from 'lucide-react';
+import LiveTimer from './LiveTimer';
 
 export default function MatchCard({ match }: { match: Match }) {
   const { getTeam } = useTournament();
@@ -20,7 +21,12 @@ export default function MatchCard({ match }: { match: Match }) {
         <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
           {match.isFinal ? '🏆 Final' : `Matchday ${match.matchDay}`}
         </span>
-        <StatusBadge status={match.status} />
+        <div className="flex items-center gap-2">
+          {(match.status === 'live' || match.status === 'extra_time') && (
+            <LiveTimer match={match} />
+          )}
+          <StatusBadge status={match.status} />
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
@@ -57,9 +63,11 @@ export default function MatchCard({ match }: { match: Match }) {
         </div>
       </div>
 
-      {match.status === 'live' && match.minute !== undefined && (
-        <div className="mt-2 text-center">
-          <span className="text-[11px] font-bold text-destructive">{match.minute}'</span>
+      {match.homePenaltyScore !== undefined && match.awayPenaltyScore !== undefined && (
+        <div className="mt-3 flex justify-center">
+          <span className="text-[11px] font-semibold text-muted-foreground bg-surface px-2.5 py-0.5 rounded-full border border-border">
+            Penalties: {match.homePenaltyScore} - {match.awayPenaltyScore}
+          </span>
         </div>
       )}
     </Link>

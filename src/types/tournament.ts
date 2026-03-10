@@ -1,6 +1,6 @@
 export type Position = 'GK' | 'CB' | 'LB' | 'RB' | 'CM' | 'CDM' | 'CAM' | 'LM' | 'RM' | 'ST' | 'LW' | 'RW';
 
-export type MatchStatus = 'upcoming' | 'live' | 'half_time' | 'completed';
+export type MatchStatus = 'upcoming' | 'live' | 'half_time' | 'extra_time' | 'penalties' | 'completed';
 
 export interface Player {
   id: string;
@@ -37,7 +37,10 @@ export interface Match {
   duration?: number; // half duration in minutes (e.g. 45 = 45 min halves)
   timerStartedAt?: number; // timestamp when timer started
   timerPausedAt?: number; // accumulated seconds when paused
-  currentHalf?: 1 | 2;
+  currentHalf?: 1 | 2 | 'et1' | 'et2';
+  extraTimeDuration?: number;
+  homePenaltyScore?: number;
+  awayPenaltyScore?: number;
 }
 
 export interface StandingsRow {
@@ -58,6 +61,19 @@ export interface PlayerStats {
   teamId: string;
   goals: number;
   assists: number;
+  yellowCards: number;
+  redCards: number;
+}
+
+export interface Prediction {
+  id: string;
+  createdAt: number;
+  userName: string;
+  finalist1Id: string;
+  finalist2Id: string;
+  predictedWinnerId: string;
+  homeScore: number;
+  awayScore: number;
 }
 
 export interface Admin {
@@ -72,6 +88,7 @@ export interface TournamentState {
   admins: Admin[];
   adminCode: string;
   tournamentStarted: boolean;
+  predictions: Prediction[];
 }
 
 export interface Team {

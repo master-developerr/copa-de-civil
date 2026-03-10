@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Crown } from 'lucide-react';
 import { useTournament } from '@/context/TournamentContext';
 import StatusBadge from '@/components/StatusBadge';
+import LiveTimer from '@/components/LiveTimer';
 
 export default function MatchPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,9 +33,8 @@ export default function MatchPage() {
       </Link>
 
       {/* Scoreboard */}
-      <div className={`rounded-lg border p-6 md:p-8 mb-5 ${
-        match.isFinal ? 'bg-primary/[0.02] border-primary/15' : 'bg-card border-border'
-      }`}>
+      <div className={`rounded-lg border p-6 md:p-8 mb-5 ${match.isFinal ? 'bg-primary/[0.02] border-primary/15' : 'bg-card border-border'
+        }`}>
         {match.isFinal && (
           <div className="text-center mb-3">
             <span className="text-gradient-gold font-display text-lg tracking-wider">🏆 FINAL</span>
@@ -42,8 +42,8 @@ export default function MatchPage() {
         )}
         <div className="text-center mb-4">
           <StatusBadge status={match.status} />
-          {match.status === 'live' && match.minute !== undefined && (
-            <span className="ml-2 text-xs font-bold text-destructive">{match.minute}'</span>
+          {(match.status === 'live' || match.status === 'extra_time') && (
+            <span className="ml-2"><LiveTimer match={match} /></span>
           )}
           {match.status === 'half_time' && (
             <span className="ml-2 text-xs font-bold text-primary">Half Time</span>
@@ -62,14 +62,22 @@ export default function MatchPage() {
             <span className="font-display text-sm md:text-base tracking-wide text-center">{home.name}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="font-display text-4xl md:text-5xl text-foreground">
-              {match.status === 'upcoming' ? '-' : match.homeScore}
-            </span>
-            <span className="text-muted-foreground text-sm">:</span>
-            <span className="font-display text-4xl md:text-5xl text-foreground">
-              {match.status === 'upcoming' ? '-' : match.awayScore}
-            </span>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-3">
+              <span className="font-display text-4xl md:text-5xl text-foreground">
+                {match.status === 'upcoming' ? '-' : match.homeScore}
+              </span>
+              <span className="text-muted-foreground text-sm">:</span>
+              <span className="font-display text-4xl md:text-5xl text-foreground">
+                {match.status === 'upcoming' ? '-' : match.awayScore}
+              </span>
+            </div>
+
+            {match.homePenaltyScore !== undefined && match.awayPenaltyScore !== undefined && (
+              <div className="text-xs font-semibold text-muted-foreground bg-surface px-3 py-1 rounded-full border border-border">
+                Penalties: {match.homePenaltyScore} - {match.awayPenaltyScore}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col items-center gap-2">

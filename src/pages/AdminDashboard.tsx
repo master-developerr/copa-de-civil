@@ -4,6 +4,7 @@ import { useTournament } from '@/context/TournamentContext';
 import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star, Pause, Timer, CircleDot } from 'lucide-react';
 import { Position, Player } from '@/types/tournament';
 import StatusBadge from '@/components/StatusBadge';
+import LiveTimer from '@/components/LiveTimer';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -12,32 +13,6 @@ const POSITIONS: Position[] = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM',
 
 type Tab = 'teams' | 'players' | 'matches' | 'tournament';
 
-function MatchTimer({ match }: { match: any }) {
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!match.timerStartedAt) {
-      setElapsed(match.timerPausedAt || 0);
-      return;
-    }
-    const interval = setInterval(() => {
-      const secs = Math.floor((Date.now() - match.timerStartedAt) / 1000) + (match.timerPausedAt || 0);
-      setElapsed(secs);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [match.timerStartedAt, match.timerPausedAt]);
-
-  const halfOffset = match.currentHalf === 2 ? (match.duration || 45) : 0;
-  const mins = Math.floor(elapsed / 60) + halfOffset;
-  const secs = elapsed % 60;
-
-  return (
-    <span className="font-mono text-sm font-bold text-destructive">
-      {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-    </span>
-  );
-}
-
 export default function AdminDashboard() {
   const {
     teams, matches, isAdmin, tournamentStarted,
@@ -45,7 +20,8 @@ export default function AdminDashboard() {
     updateMatchStatus, addMatchEvent, updateMatchMinute,
     startTournament, adminLogout, getTeam, leagueComplete,
     activateFinal, finalMatch,
-    setMatchDuration, startMatchTimer, pauseMatchTimer, startSecondHalf,
+    setMatchDuration, setExtraTimeDuration, startMatchTimer, pauseMatchTimer, startSecondHalf, startExtraTimeSecondHalf,
+    startExtraTime, startPenalties, updatePenaltyScore,
   } = useTournament();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('teams');
@@ -61,6 +37,13 @@ export default function AdminDashboard() {
     teamId: string;
     teamName: string;
     minute: number;
+  } | null>(null);
+  const [cardDialog, setCardDialog] = useState<{
+    matchId: string;
+    teamId: string;
+    teamName: string;
+    minute: number;
+    type: 'yellow_card' | 'red_card';
   } | null>(null);
   const [selectedScorer, setSelectedScorer] = useState('');
   const [selectedAssist, setSelectedAssist] = useState('');
@@ -100,6 +83,18 @@ export default function AdminDashboard() {
     setSelectedAssist('');
   };
 
+  const openCardDialog = (matchId: string, teamId: string, match: any, type: 'yellow_card' | 'red_card') => {
+    const team = getTeam(teamId);
+    let minute = match.minute || 0;
+    if (match.timerStartedAt) {
+      const elapsed = Math.floor((Date.now() - match.timerStartedAt) / 1000) + (match.timerPausedAt || 0);
+      const halfOffset = match.currentHalf === 2 ? (match.duration || 45) : 0;
+      minute = Math.floor(elapsed / 60) + halfOffset;
+    }
+    setCardDialog({ matchId, teamId, teamName: team?.name || 'Unknown', minute, type });
+    setSelectedScorer(''); // we'll reuse selectedScorer to hold the picked player's ID
+  };
+
   const confirmGoal = () => {
     if (!goalDialog || !selectedScorer) return;
     const team = getTeam(goalDialog.teamId);
@@ -119,6 +114,24 @@ export default function AdminDashboard() {
 
     updateMatchMinute(goalDialog.matchId, goalDialog.minute);
     setGoalDialog(null);
+  };
+
+  const confirmCard = () => {
+    if (!cardDialog || !selectedScorer) return;
+    const team = getTeam(cardDialog.teamId);
+    const player = team?.players.find(p => p.id === selectedScorer);
+    if (!player) return;
+
+    addMatchEvent(cardDialog.matchId, {
+      type: cardDialog.type,
+      minute: cardDialog.minute,
+      playerId: player.id,
+      playerName: player.name,
+      teamId: cardDialog.teamId,
+    });
+
+    updateMatchMinute(cardDialog.matchId, cardDialog.minute);
+    setCardDialog(null);
   };
 
   const tabs: { id: Tab; label: string; icon: typeof Shield }[] = [
@@ -150,9 +163,8 @@ export default function AdminDashboard() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap border-b-2 -mb-px ${
-              tab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap border-b-2 -mb-px ${tab === t.id ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
           >
             <t.icon className="h-3.5 w-3.5" />
             {t.label}
@@ -265,24 +277,26 @@ export default function AdminDashboard() {
               const away = getTeam(match.awayTeamId);
               if (!home || !away) return null;
 
-              const isLive = match.status === 'live';
+              const isLive = match.status === 'live' || match.status === 'extra_time';
               const isHalfTime = match.status === 'half_time';
               const isUpcoming = match.status === 'upcoming';
               const isCompleted = match.status === 'completed';
+              const isPenalties = match.status === 'penalties';
 
               return (
-                <div key={match.id} className={`bg-card rounded-lg border p-4 space-y-3 ${
-                  isLive ? 'border-destructive/20' : isHalfTime ? 'border-primary/15' : 'border-border'
-                }`}>
+                <div key={match.id} className={`bg-card rounded-lg border p-4 space-y-3 ${isLive ? 'border-destructive/20' : isHalfTime ? 'border-primary/15' : 'border-border'
+                  }`}>
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground uppercase tracking-wider">
                       {match.isFinal ? '🏆 Final' : `Matchday ${match.matchDay}`}
                     </span>
                     <div className="flex items-center gap-2">
-                      {isLive && <MatchTimer match={match} />}
+                      {isLive && <LiveTimer match={match} />}
                       <StatusBadge status={match.status} />
                       {isLive && match.currentHalf && (
-                        <span className="text-[10px] font-bold text-muted-foreground">H{match.currentHalf}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {match.currentHalf === 1 ? '1H' : match.currentHalf === 2 ? '2H' : 'ET'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -306,32 +320,74 @@ export default function AdminDashboard() {
                     <div className="flex flex-col items-center gap-1 flex-1">
                       <span className="font-medium text-sm text-foreground">{home.name}</span>
                       {isLive && (
-                        <button
-                          onClick={() => openGoalDialog(match.id, match.homeTeamId, match)}
-                          className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}
-                        >
-                          ⚽ Goal
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => openGoalDialog(match.id, match.homeTeamId, match)}
+                            className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20 px-2`}
+                            title="Goal"
+                          >
+                            ⚽
+                          </button>
+                          <button
+                            onClick={() => openCardDialog(match.id, match.homeTeamId, match, 'yellow_card')}
+                            className={`${btnSecondary} bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 px-2`}
+                            title="Yellow Card"
+                          >
+                            🟨
+                          </button>
+                          <button
+                            onClick={() => openCardDialog(match.id, match.homeTeamId, match, 'red_card')}
+                            className={`${btnSecondary} bg-red-500/10 text-red-500 hover:bg-red-500/20 px-2`}
+                            title="Red Card"
+                          >
+                            🟥
+                          </button>
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-3xl text-foreground">
-                        {isUpcoming ? '-' : match.homeScore}
-                      </span>
-                      <span className="text-muted-foreground text-xs">:</span>
-                      <span className="font-display text-3xl text-foreground">
-                        {isUpcoming ? '-' : match.awayScore}
-                      </span>
+                    <div className="flex flex-col items-center gap-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display text-4xl text-foreground">
+                          {isUpcoming ? '-' : match.homeScore}
+                        </span>
+                        <span className="text-muted-foreground text-sm">:</span>
+                        <span className="font-display text-4xl text-foreground">
+                          {isUpcoming ? '-' : match.awayScore}
+                        </span>
+                      </div>
+
+                      {match.homePenaltyScore !== undefined && match.awayPenaltyScore !== undefined && (
+                        <div className="text-xs font-semibold text-muted-foreground mt-1">
+                          Penalties: ({match.homePenaltyScore}) - ({match.awayPenaltyScore})
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-center gap-1 flex-1">
                       <span className="font-medium text-sm text-foreground">{away.name}</span>
                       {isLive && (
-                        <button
-                          onClick={() => openGoalDialog(match.id, match.awayTeamId, match)}
-                          className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}
-                        >
-                          ⚽ Goal
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => openGoalDialog(match.id, match.awayTeamId, match)}
+                            className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20 px-2`}
+                            title="Goal"
+                          >
+                            ⚽
+                          </button>
+                          <button
+                            onClick={() => openCardDialog(match.id, match.awayTeamId, match, 'yellow_card')}
+                            className={`${btnSecondary} bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 px-2`}
+                            title="Yellow Card"
+                          >
+                            🟨
+                          </button>
+                          <button
+                            onClick={() => openCardDialog(match.id, match.awayTeamId, match, 'red_card')}
+                            className={`${btnSecondary} bg-red-500/10 text-red-500 hover:bg-red-500/20 px-2`}
+                            title="Red Card"
+                          >
+                            🟥
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -377,22 +433,71 @@ export default function AdminDashboard() {
                             Half Time
                           </button>
                         )}
-                        {match.currentHalf === 2 && (
+                        {match.currentHalf === 'et1' && (
+                          <button onClick={() => updateMatchStatus(match.id, 'half_time')} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
+                            ET Half Time
+                          </button>
+                        )}
+                        {(match.currentHalf === 2 || match.currentHalf === 'et2') && (
                           <button onClick={() => updateMatchStatus(match.id, 'completed')} className={`${btnSecondary} bg-secondary text-muted-foreground hover:bg-secondary/80`}>
                             Full Time
                           </button>
                         )}
                       </>
                     )}
-                    {isHalfTime && (
+                    {isHalfTime && match.currentHalf === 1 && (
                       <button onClick={() => startSecondHalf(match.id)} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
                         <Play className="h-3 w-3" /> Start 2nd Half
                       </button>
                     )}
-                    {isCompleted && (
-                      <button onClick={() => updateMatchStatus(match.id, 'upcoming')} className={`${btnSecondary} bg-secondary text-secondary-foreground hover:bg-secondary/80`}>
-                        Reset
+                    {isHalfTime && match.currentHalf === 'et1' && (
+                      <button onClick={() => startExtraTimeSecondHalf(match.id)} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
+                        <Play className="h-3 w-3" /> Start ET 2nd Half
                       </button>
+                    )}
+                    {isCompleted && (
+                      <>
+                        <div className="flex items-center gap-2 mr-2">
+                          <input type="number" min={1} max={30} value={match.extraTimeDuration || 15} onChange={e => setExtraTimeDuration(match.id, parseInt(e.target.value) || 15)} className="w-12 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                          <span className="text-[11px] text-muted-foreground leading-none">ET min</span>
+                        </div>
+                        <button onClick={() => startExtraTime(match.id)} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
+                          Extra Time
+                        </button>
+                        <button onClick={() => startPenalties(match.id)} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
+                          Penalties
+                        </button>
+                        <button onClick={() => updateMatchStatus(match.id, 'upcoming')} className={`${btnSecondary} bg-secondary text-secondary-foreground hover:bg-secondary/80 ml-auto`}>
+                          Reset
+                        </button>
+                      </>
+                    )}
+
+                    {isPenalties && (
+                      <div className="flex items-center gap-2 p-2 border border-border rounded-md bg-surface/50 w-full mt-2">
+                        <span className="text-xs font-semibold text-muted-foreground">Penalties:</span>
+                        <input
+                          type="number" min={0}
+                          value={match.homePenaltyScore ?? ''}
+                          onChange={e => updatePenaltyScore(match.id, parseInt(e.target.value) || 0, match.awayPenaltyScore || 0)}
+                          className="w-12 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-xs"
+                          placeholder={home.name}
+                        />
+                        <span className="text-xs text-muted-foreground">-</span>
+                        <input
+                          type="number" min={0}
+                          value={match.awayPenaltyScore ?? ''}
+                          onChange={e => updatePenaltyScore(match.id, match.homePenaltyScore || 0, parseInt(e.target.value) || 0)}
+                          className="w-12 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-xs"
+                          placeholder={away.name}
+                        />
+                        <button
+                          onClick={() => updateMatchStatus(match.id, 'completed')}
+                          className={`${btnSecondary} bg-primary text-primary-foreground hover:bg-primary/90 ml-auto`}
+                        >
+                          End
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -465,11 +570,10 @@ export default function AdminDashboard() {
                       <button
                         key={p.id}
                         onClick={() => setSelectedScorer(p.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${
-                          selectedScorer === p.id
-                            ? 'bg-primary/10 text-primary border border-primary/20'
-                            : 'bg-surface hover:bg-surface-hover text-foreground'
-                        }`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${selectedScorer === p.id
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'bg-surface hover:bg-surface-hover text-foreground'
+                          }`}
                       >
                         <span className="font-mono text-[11px] text-muted-foreground w-5">{p.jerseyNumber}</span>
                         <span className="flex-1">{p.name}</span>
@@ -484,9 +588,8 @@ export default function AdminDashboard() {
                   <div className="space-y-0.5 max-h-44 overflow-y-auto">
                     <button
                       onClick={() => setSelectedAssist('')}
-                      className={`w-full px-3 py-2 rounded-md text-sm transition-colors text-left ${
-                        selectedAssist === '' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-surface hover:bg-surface-hover text-muted-foreground'
-                      }`}
+                      className={`w-full px-3 py-2 rounded-md text-sm transition-colors text-left ${selectedAssist === '' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-surface hover:bg-surface-hover text-muted-foreground'
+                        }`}
                     >
                       No assist
                     </button>
@@ -494,11 +597,10 @@ export default function AdminDashboard() {
                       <button
                         key={p.id}
                         onClick={() => setSelectedAssist(p.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${
-                          selectedAssist === p.id
-                            ? 'bg-primary/10 text-primary border border-primary/20'
-                            : 'bg-surface hover:bg-surface-hover text-foreground'
-                        }`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${selectedAssist === p.id
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'bg-surface hover:bg-surface-hover text-foreground'
+                          }`}
                       >
                         <span className="font-mono text-[11px] text-muted-foreground w-5">{p.jerseyNumber}</span>
                         <span className="flex-1">{p.name}</span>
@@ -514,6 +616,56 @@ export default function AdminDashboard() {
                   className="w-full py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity"
                 >
                   Confirm Goal
+                </button>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Card Dialog */}
+      <Dialog open={!!cardDialog} onOpenChange={(open) => !open && setCardDialog(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display tracking-wide text-lg">
+              {cardDialog?.type === 'yellow_card' ? '🟨 YELLOW CARD' : '🟥 RED CARD'} — {cardDialog?.teamName}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Minute {cardDialog?.minute}' — Select the player who received the card.
+            </DialogDescription>
+          </DialogHeader>
+          {cardDialog && (() => {
+            const team = getTeam(cardDialog.teamId);
+            const players = team?.players || [];
+            return (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block">Player *</label>
+                  <div className="space-y-0.5 max-h-44 overflow-y-auto">
+                    {players.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedScorer(p.id)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors text-left ${selectedScorer === p.id
+                          ? 'bg-primary/10 text-primary border border-primary/20'
+                          : 'bg-surface hover:bg-surface-hover text-foreground'
+                          }`}
+                      >
+                        <span className="font-mono text-[11px] text-muted-foreground w-5">{p.jerseyNumber}</span>
+                        <span className="flex-1">{p.name}</span>
+                        <span className="text-[11px] text-muted-foreground">{p.position}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={confirmCard}
+                  disabled={!selectedScorer}
+                  className={`w-full py-2.5 rounded-md text-primary-foreground text-sm font-semibold disabled:opacity-50 hover:opacity-90 transition-opacity ${cardDialog.type === 'yellow_card' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                >
+                  Confirm Card
                 </button>
               </div>
             );
