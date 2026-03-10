@@ -330,10 +330,12 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
     addPredictionMutation(prediction);
   };
 
-  const deleteTournament = useCallback(() => {
+  const deleteTournament = useCallback(async () => {
     if (window.confirm("Are you SURE you want to completely delete the tournament? All teams, matches, and predictions will be wiped forever!")) {
-      deleteTournamentMutation();
-      window.location.reload();
+      await deleteTournamentMutation();
+      // Convex real-time subscriptions will auto-update the UI
+      setIsAdmin(false);
+      localStorage.removeItem(ADMIN_SESSION_KEY);
     }
   }, [deleteTournamentMutation]);
 
