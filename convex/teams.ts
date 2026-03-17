@@ -93,3 +93,28 @@ export const setCaptain = mutation({
         await ctx.db.patch(args.teamId, { players: updatedPlayers });
     }
 });
+
+export const updatePlayer = mutation({
+    args: {
+        teamId: v.id("teams"),
+        playerId: v.string(),
+        name: v.optional(v.string()),
+        position: v.optional(v.string()),
+        jerseyNumber: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const team = await ctx.db.get(args.teamId);
+        if (!team) throw new Error("Team not found");
+
+        const updatedPlayers = team.players.map(p => {
+            if (p.id !== args.playerId) return p;
+            return {
+                ...p,
+                ...(args.name !== undefined && { name: args.name }),
+                ...(args.position !== undefined && { position: args.position }),
+                ...(args.jerseyNumber !== undefined && { jerseyNumber: args.jerseyNumber }),
+            };
+        });
+        await ctx.db.patch(args.teamId, { players: updatedPlayers });
+    }
+});

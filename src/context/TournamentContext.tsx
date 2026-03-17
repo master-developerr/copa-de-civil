@@ -24,6 +24,7 @@ interface TournamentContextType {
   addTeam: (name: string, description?: string, logo?: string) => boolean;
   removeTeam: (id: string) => void;
   addPlayer: (teamId: string, player: Omit<Player, 'id' | 'teamId' | 'isCaptain'>) => boolean;
+  updatePlayer: (teamId: string, playerId: string, updates: { name?: string; position?: string; jerseyNumber?: number }) => void;
   removePlayer: (teamId: string, playerId: string) => void;
   setCaptain: (teamId: string, playerId: string) => void;
   updateMatchStatus: (matchId: string, status: MatchStatus) => void;
@@ -189,6 +190,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const removeTeamMutation = useMutation(api.teams.remove);
   const addPlayerMutation = useMutation(api.teams.addPlayer);
   const removePlayerMutation = useMutation(api.teams.removePlayer);
+  const updatePlayerMutation = useMutation(api.teams.updatePlayer);
   const setCaptainMutation = useMutation(api.teams.setCaptain);
 
   const initLeague = useMutation(api.matches.initializeLeague);
@@ -245,6 +247,9 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   };
 
   const removePlayer = (teamId: string, playerId: string) => removePlayerMutation({ teamId: teamId as Id<"teams">, playerId });
+  const updatePlayer = (teamId: string, playerId: string, updates: { name?: string; position?: string; jerseyNumber?: number }) => {
+    updatePlayerMutation({ teamId: teamId as Id<"teams">, playerId, ...updates });
+  };
   const setCaptain = (teamId: string, playerId: string) => setCaptainMutation({ teamId: teamId as Id<"teams">, playerId });
 
   const startTournament = (): boolean => {
@@ -347,7 +352,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
       tournamentStarted,
       isPredictorOpen,
       addPrediction,
-      addTeam, removeTeam, addPlayer, removePlayer, setCaptain,
+      addTeam, removeTeam, addPlayer, updatePlayer, removePlayer, setCaptain,
       updateMatchStatus, updateMatchScore, addMatchEvent, updateMatchMinute,
       setMatchDuration, setExtraTimeDuration, startMatchTimer, pauseMatchTimer, startSecondHalf, startExtraTimeSecondHalf,
       startExtraTime, startPenalties, updatePenaltyScore,

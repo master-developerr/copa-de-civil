@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '@/context/TournamentContext';
-import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star, Pause, Timer, CircleDot } from 'lucide-react';
+import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star, Pause, Timer, CircleDot, Pencil, Check } from 'lucide-react';
 import { Position, Player } from '@/types/tournament';
 import StatusBadge from '@/components/StatusBadge';
 import LiveTimer from '@/components/LiveTimer';
@@ -55,7 +55,7 @@ function DurationInput({ value, defaultVal, onCommit, min, max, className }: {
 export default function AdminDashboard() {
   const {
     teams, matches, isAdmin, tournamentStarted,
-    addTeam, removeTeam, addPlayer, removePlayer, setCaptain,
+    addTeam, removeTeam, addPlayer, updatePlayer, removePlayer, setCaptain,
     updateMatchStatus, addMatchEvent, updateMatchMinute,
     startTournament, adminLogout, getTeam, leagueComplete,
     activateFinal, finalMatch,
@@ -70,6 +70,14 @@ export default function AdminDashboard() {
   const [playerName, setPlayerName] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
   const [position, setPosition] = useState<Position>('ST');
+
+  const [editingPlayer, setEditingPlayer] = useState<{
+    teamId: string;
+    playerId: string;
+    name: string;
+    jerseyNumber: string;
+    position: Position;
+  } | null>(null);
 
   const [goalDialog, setGoalDialog] = useState<{
     matchId: string;
@@ -280,24 +288,84 @@ export default function AdminDashboard() {
                 <p className="text-xs text-muted-foreground">No players yet.</p>
               ) : (
                 <div className="space-y-0.5">
-                  {team.players.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 text-sm py-1.5">
-                      <span className="font-mono text-muted-foreground w-5 text-center text-[11px]">{p.jerseyNumber}</span>
-                      <span className="text-foreground flex-1 text-sm">{p.name}</span>
-                      {p.isCaptain && <Crown className="h-3 w-3 text-primary" />}
-                      <span className="text-[11px] text-muted-foreground">{p.position}</span>
-                      <button
-                        onClick={() => setCaptain(team.id, p.id)}
-                        className={`p-1 rounded transition-colors ${p.isCaptain ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        title="Set as captain"
-                      >
-                        <Star className="h-3 w-3" />
-                      </button>
-                      <button onClick={() => removePlayer(team.id, p.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                  {team.players.map(p => {
+                    const isEditing = editingPlayer?.teamId === team.id && editingPlayer?.playerId === p.id;
+
+                    if (isEditing) {
+                      return (
+                        <div key={p.id} className="flex items-center gap-1.5 py-1.5 bg-surface/50 rounded-md px-2 border border-primary/20">
+                          <input
+                            type="number"
+                            value={editingPlayer.jerseyNumber}
+                            onChange={e => setEditingPlayer({ ...editingPlayer, jerseyNumber: e.target.value })}
+                            className="w-8 text-center font-mono text-[11px] px-1 py-0.5 rounded bg-surface border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            min={1} max={99}
+                          />
+                          <input
+                            type="text"
+                            value={editingPlayer.name}
+                            onChange={e => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
+                            className="flex-1 text-sm px-2 py-0.5 rounded bg-surface border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            maxLength={50}
+                          />
+                          <select
+                            value={editingPlayer.position}
+                            onChange={e => setEditingPlayer({ ...editingPlayer, position: e.target.value as Position })}
+                            className="text-[11px] px-1 py-0.5 rounded bg-surface border border-border text-foreground focus:outline-none"
+                          >
+                            {POSITIONS.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+                          </select>
+                          <button
+                            onClick={() => {
+                              const jersey = parseInt(editingPlayer.jerseyNumber);
+                              updatePlayer(team.id, p.id, {
+                                name: editingPlayer.name.trim() || p.name,
+                                position: editingPlayer.position,
+                                jerseyNumber: isNaN(jersey) ? p.jerseyNumber : jersey,
+                              });
+                              setEditingPlayer(null);
+                            }}
+                            className="p-1 text-primary hover:text-primary/80 transition-colors"
+                            title="Save"
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={p.id} className="flex items-center gap-2 text-sm py-1.5">
+                        <span className="font-mono text-muted-foreground w-5 text-center text-[11px]">{p.jerseyNumber}</span>
+                        <span className="text-foreground flex-1 text-sm">{p.name}</span>
+                        {p.isCaptain && <Crown className="h-3 w-3 text-primary" />}
+                        <span className="text-[11px] text-muted-foreground">{p.position}</span>
+                        <button
+                          onClick={() => setEditingPlayer({
+                            teamId: team.id,
+                            playerId: p.id,
+                            name: p.name,
+                            jerseyNumber: String(p.jerseyNumber),
+                            position: p.position as Position,
+                          })}
+                          className="p-1 text-muted-foreground hover:text-primary transition-colors"
+                          title="Edit player"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => setCaptain(team.id, p.id)}
+                          className={`p-1 rounded transition-colors ${p.isCaptain ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                          title="Set as captain"
+                        >
+                          <Star className="h-3 w-3" />
+                        </button>
+                        <button onClick={() => removePlayer(team.id, p.id)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
