@@ -15,7 +15,12 @@ http.route({
     if (blob === null) {
       return new Response("Image not found", { status: 404 });
     }
-    return new Response(blob);
+    return new Response(blob, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": blob.type,
+      },
+    });
   }),
 });
 

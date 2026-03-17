@@ -170,10 +170,26 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const convexSettings = useQuery(api.settings.get);
 
   // Mapped data states to fit legacy application interface
-  const teams: Team[] = convexTeams.map(t => ({
+  const baseTeams: Team[] = convexTeams.map(t => ({
     ...t,
     id: t._id,
     players: (t.players as any[]).map(p => ({ ...p, teamId: t._id })) as Player[]
+  }));
+
+  // Helper to handle storage URLs
+  const getStorageUrl = (storageId: string | undefined) => {
+    if (!storageId) return undefined;
+    if (storageId.startsWith('http')) return storageId;
+    const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL || 
+                    import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site');
+    const url = `${siteUrl}/api/storage/${storageId}`;
+    console.log(`Generating logo URL for ${storageId}: ${url}`);
+    return url;
+  };
+
+  const teams: Team[] = baseTeams.map(t => ({
+    ...t,
+    logo: getStorageUrl(t.logo)
   }));
   const matches: Match[] = convexMatches.map(m => ({
     ...m,
@@ -183,20 +199,6 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
     events: (m.events as any[]).map(e => ({ ...e, type: e.type as any })) as MatchEvent[]
   }));
   const predictions: Prediction[] = convexPredictions.map(p => ({ ...p, id: p._id }));
-
-  // Helper to handle storage URLs
-  const getStorageUrl = (storageId: string | undefined) => {
-    if (!storageId) return undefined;
-    if (storageId.startsWith('http')) return storageId;
-    const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL || 
-                    import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site');
-    return `${siteUrl}/api/storage/${storageId}`;
-  };
-
-  const teamsWithLogos = teams.map(t => ({
-    ...t,
-    logo: getStorageUrl(t.logo)
-  }));
 
 
   const tournamentStarted = convexSettings?.tournamentStarted || false;
@@ -399,7 +401,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <TournamentContext.Provider value={{
-      teams: teamsWithLogos, matches, standings, playerStats,
+      teams, matches, standings, playerStats,
       predictions,
       isAdmin,
       tournamentStarted,
