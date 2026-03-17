@@ -34,7 +34,7 @@ export default function LandingPage() {
           <h1 className="font-display text-5xl md:text-7xl leading-none mb-3">
             <span className="text-gradient-gold">COPA DE CIVIL</span>
           </h1>
-          <p className="font-display text-3xl md:text-4xl text-foreground/80 mb-2">March 13</p>
+          <p className="font-display text-3xl md:text-4xl text-foreground/80 mb-2">March 17</p>
           <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">
             4 teams. 7 matches. 1 champion.
           </p>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '@/context/TournamentContext';
 import { Shield, Users, Calendar, Play, LogOut, Plus, Trash2, Crown, Trophy, Star, Pause, Timer, CircleDot } from 'lucide-react';
@@ -12,6 +12,45 @@ import {
 const POSITIONS: Position[] = ['GK', 'CB', 'LB', 'RB', 'CDM', 'CM', 'CAM', 'LM', 'RM', 'ST', 'LW', 'RW'];
 
 type Tab = 'teams' | 'players' | 'matches' | 'tournament';
+
+/** A number input that uses local state while focused to prevent Convex real-time re-renders from overwriting the value mid-edit. */
+function DurationInput({ value, defaultVal, onCommit, min, max, className }: {
+  value: number | undefined;
+  defaultVal: number;
+  onCommit: (v: number) => void;
+  min: number;
+  max: number;
+  className?: string;
+}) {
+  const [localVal, setLocalVal] = useState(String(value || defaultVal));
+  const isFocused = useRef(false);
+
+  // Sync from DB only when NOT focused
+  useEffect(() => {
+    if (!isFocused.current) {
+      setLocalVal(String(value || defaultVal));
+    }
+  }, [value, defaultVal]);
+
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      value={localVal}
+      onFocus={() => { isFocused.current = true; }}
+      onChange={e => setLocalVal(e.target.value)}
+      onBlur={e => {
+        isFocused.current = false;
+        const parsed = parseInt(e.target.value);
+        const final = isNaN(parsed) || parsed <= 0 ? defaultVal : parsed;
+        setLocalVal(String(final));
+        onCommit(final);
+      }}
+      className={className}
+    />
+  );
+}
 
 export default function AdminDashboard() {
   const {
@@ -305,10 +344,12 @@ export default function AdminDashboard() {
                     <div className="flex items-center justify-center gap-2">
                       <Timer className="h-3.5 w-3.5 text-muted-foreground" />
                       <label className="text-[11px] text-muted-foreground">Half duration:</label>
-                      <input
-                        type="number" min={1} max={90}
-                        value={match.duration || 45}
-                        onChange={e => setMatchDuration(match.id, parseInt(e.target.value) || 45)}
+                      <DurationInput
+                        value={match.duration}
+                        defaultVal={15}
+                        min={1}
+                        max={90}
+                        onCommit={v => setMatchDuration(match.id, v)}
                         className="w-14 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
                       />
                       <span className="text-[11px] text-muted-foreground">min</span>
@@ -458,7 +499,14 @@ export default function AdminDashboard() {
                     {isCompleted && (
                       <>
                         <div className="flex items-center gap-2 mr-2">
-                          <input type="number" min={1} max={30} value={match.extraTimeDuration || 15} onChange={e => setExtraTimeDuration(match.id, parseInt(e.target.value) || 15)} className="w-12 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                          <DurationInput
+                            value={match.extraTimeDuration}
+                            defaultVal={15}
+                            min={1}
+                            max={30}
+                            onCommit={v => setExtraTimeDuration(match.id, v)}
+                            className="w-12 text-center px-1.5 py-1 rounded-md bg-surface border border-border text-xs focus:outline-none focus:ring-1 focus:ring-primary/50"
+                          />
                           <span className="text-[11px] text-muted-foreground leading-none">ET min</span>
                         </div>
                         <button onClick={() => startExtraTime(match.id)} className={`${btnSecondary} bg-primary/10 text-primary hover:bg-primary/20`}>
