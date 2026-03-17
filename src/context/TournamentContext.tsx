@@ -51,6 +51,7 @@ interface TournamentContextType {
   leagueComplete: boolean;
   finalMatch: Match | undefined;
   deleteTournament: () => void;
+  uploadLogo: (teamId: string, file: File) => Promise<void>;
 }
 
 const TournamentContext = createContext<TournamentContextType | null>(null);
@@ -169,13 +170,32 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const convexSettings = useQuery(api.settings.get);
 
   // Mapped data states to fit legacy application interface
-  const teams: Team[] = convexTeams.map(t => ({ ...t, id: t._id }));
+  const teams: Team[] = convexTeams.map(t => ({
+    ...t,
+    id: t._id,
+    players: (t.players as any[]).map(p => ({ ...p, teamId: t._id })) as Player[]
+  }));
   const matches: Match[] = convexMatches.map(m => ({
     ...m,
     id: m._id,
-    status: m.status as MatchStatus
+    status: m.status as MatchStatus,
+    currentHalf: m.currentHalf as any,
+    events: (m.events as any[]).map(e => ({ ...e, type: e.type as any })) as MatchEvent[]
   }));
   const predictions: Prediction[] = convexPredictions.map(p => ({ ...p, id: p._id }));
+
+  // Helper to handle storage URLs
+  const getStorageUrl = (storageId: string | undefined) => {
+    if (!storageId) return undefined;
+    if (storageId.startsWith('http')) return storageId;
+    return `https://${import.meta.env.VITE_CONVEX_URL.split('//')[1]}/api/storage/${storageId}`;
+  };
+
+  const teamsWithLogos = teams.map(t => ({
+    ...t,
+    logo: getStorageUrl(t.logo)
+  }));
+
 
   const tournamentStarted = convexSettings?.tournamentStarted || false;
 
@@ -209,6 +229,9 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const createFinalMut = useMutation(api.matches.createFinal);
 
   const addPredictionMutation = useMutation(api.predictions.add);
+  const generateUploadUrl = useMutation(api.teams.generateUploadUrl);
+  const updateLogoMutation = useMutation(api.teams.updateLogo);
+
 
   useEffect(() => {
     initSettings();
@@ -344,9 +367,32 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
     }
   }, [deleteTournamentMutation]);
 
+  const uploadLogo = async (teamId: string, file: File) => {
+    try {
+      // 1. Get upload URL
+      const postUrl = await generateUploadUrl();
+      
+      // 2. POST file to Convex
+      const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      
+      const { storageId } = await result.json();
+      
+      // 3. Update team logo with storageId
+      await updateLogoMutation({ teamId: teamId as Id<"teams">, storageId });
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      throw error;
+    }
+  };
+
+
   return (
     <TournamentContext.Provider value={{
-      teams, matches, standings, playerStats,
+      teams: teamsWithLogos, matches, standings, playerStats,
       predictions,
       isAdmin,
       tournamentStarted,
@@ -359,6 +405,7 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
       startTournament, adminLogin, adminLogout,
       getTeam, getMatch, getLiveMatch, getTopTwo,
       activateFinal, leagueComplete, finalMatch, deleteTournament,
+      uploadLogo,
     }}>
       {children}
     </TournamentContext.Provider>

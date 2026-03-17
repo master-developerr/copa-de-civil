@@ -60,9 +60,12 @@ export default function AdminDashboard() {
     startTournament, adminLogout, getTeam, leagueComplete,
     activateFinal, finalMatch,
     setMatchDuration, setExtraTimeDuration, startMatchTimer, pauseMatchTimer, startSecondHalf, startExtraTimeSecondHalf,
-    startExtraTime, startPenalties, updatePenaltyScore, deleteTournament
+    startExtraTime, startPenalties, updatePenaltyScore, deleteTournament, uploadLogo
   } = useTournament();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingFor, setUploadingFor] = useState<string | null>(null);
+
   const [tab, setTab] = useState<Tab>('teams');
 
   const [teamName, setTeamName] = useState('');
@@ -116,6 +119,19 @@ export default function AdminDashboard() {
     setPlayerName('');
     setJerseyNumber('');
   };
+  
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingFor) return;
+
+    try {
+      await uploadLogo(uploadingFor, file);
+      setUploadingFor(null);
+    } catch (err) {
+      alert("Failed to upload logo. Please try again.");
+    }
+  };
+
 
   const openGoalDialog = (matchId: string, teamId: string, match: any) => {
     const team = getTeam(teamId);
@@ -245,18 +261,45 @@ export default function AdminDashboard() {
             {teams.map(team => (
               <div key={team.id} className="flex items-center justify-between p-3 bg-card rounded-md border border-border">
                 <div className="flex items-center gap-2.5">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <div className="h-8 w-8 rounded bg-surface flex items-center justify-center shrink-0 border border-border">
+                    {team.logo ? (
+                      <img src={team.logo} alt={team.name} className="h-6 w-6 object-contain" />
+                    ) : (
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                   <span className="font-medium text-sm text-foreground">{team.name}</span>
                   <span className="text-[11px] text-muted-foreground">{team.players.length} players</span>
                 </div>
-                {!tournamentStarted && (
-                  <button onClick={() => removeTeam(team.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
-                    <Trash2 className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => {
+                      setUploadingFor(team.id);
+                      fileInputRef.current?.click();
+                    }}
+                    className="p-1.5 text-muted-foreground hover:text-primary transition-colors"
+                    title="Upload Logo"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
-                )}
+                  {!tournamentStarted && (
+                    <button onClick={() => removeTeam(team.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleLogoUpload}
+            className="hidden"
+            accept="image/*"
+          />
+
         </div>
       )}
 

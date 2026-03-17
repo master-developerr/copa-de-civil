@@ -55,9 +55,20 @@ export default function StandingsTable({ mini = false }: Props) {
                   </span>
                 </td>
                 <td className="py-2.5 px-2">
-                  <span className="font-semibold text-sm text-foreground">
-                    {team?.name || 'Unknown'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded bg-surface flex items-center justify-center shrink-0 border border-border/50">
+                      {team?.logo ? (
+                        <img src={team.logo} alt={team.name} className="h-4 w-4 object-contain" />
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground font-bold">
+                          {team?.name?.[0]}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-semibold text-sm text-foreground">
+                      {team?.name || 'Unknown'}
+                    </span>
+                  </div>
                 </td>
                 <td className="text-center py-2.5 px-2 text-muted-foreground">{row.played}</td>
                 {!mini && (

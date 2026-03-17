@@ -94,6 +94,25 @@ export const setCaptain = mutation({
     }
 });
 
+export const generateUploadUrl = mutation(async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+});
+
+export const updateLogo = mutation({
+    args: {
+        teamId: v.id("teams"),
+        storageId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const team = await ctx.db.get(args.teamId);
+        if (!team) throw new Error("Team not found");
+
+        // If there was a previous logo, we might want to delete it from storage
+        // but for now, just update the reference
+        await ctx.db.patch(args.teamId, { logo: args.storageId });
+    },
+});
+
 export const updatePlayer = mutation({
     args: {
         teamId: v.id("teams"),
