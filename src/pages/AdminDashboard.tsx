@@ -127,8 +127,12 @@ export default function AdminDashboard() {
     try {
       await uploadLogo(uploadingFor, file);
       setUploadingFor(null);
-    } catch (err) {
-      alert("Failed to upload logo. Please try again.");
+    } catch (err: any) {
+      alert("Failed to upload logo: " + (err.message || String(err)));
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 

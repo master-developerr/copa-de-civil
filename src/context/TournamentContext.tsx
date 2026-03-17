@@ -379,6 +379,11 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
         body: file,
       });
       
+      if (!result.ok) {
+        const errorText = await result.text();
+        throw new Error(`Upload failed (${result.status}): ${errorText}`);
+      }
+
       const { storageId } = await result.json();
       
       // 3. Update team logo with storageId
