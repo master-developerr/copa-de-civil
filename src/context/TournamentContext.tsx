@@ -188,7 +188,9 @@ export function TournamentProvider({ children }: { children: React.ReactNode }) 
   const getStorageUrl = (storageId: string | undefined) => {
     if (!storageId) return undefined;
     if (storageId.startsWith('http')) return storageId;
-    return `https://${import.meta.env.VITE_CONVEX_URL.split('//')[1]}/api/storage/${storageId}`;
+    const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL || 
+                    import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site');
+    return `${siteUrl}/api/storage/${storageId}`;
   };
 
   const teamsWithLogos = teams.map(t => ({

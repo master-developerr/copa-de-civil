@@ -94,8 +94,11 @@ export const setCaptain = mutation({
     }
 });
 
-export const generateUploadUrl = mutation(async (ctx) => {
-    return await ctx.storage.generateUploadUrl();
+export const generateUploadUrl = mutation({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.storage.generateUploadUrl();
+    },
 });
 
 export const updateLogo = mutation({
